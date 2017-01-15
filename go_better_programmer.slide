@@ -1,0 +1,283 @@
+How Go helped me
+Be a better programmer
+14 Jan 2017
+
+Loh Siu Yin
+Technology Consultant, Beyond Broadcast LLP
+
+* I disliked Go ...
+hello/main.go:
+.play hello/main.go
+
+I thought it was C without the semicolons.
+
+.code hello/main.c
+
+It was more verbose and what's the deal with the Titlecase Println? And the fmt.
+
+
+
+* Compare with
+
+Ruby:
+.code hello/main.rb
+
+Python:
+.code hello/main.py
+
+Java:
+.code hello/Hello.java
+
+
+
+* Go felt clunky without string interpolation
+Ruby:
+str/main.rb
+.code str/main.rb
+
+And it would print "The answer is 42."
+
+Go:
+.play str/main.go
+
+
+* Go has no classes and OO-kind inheritance
+ruby: cls/main.rb:
+.code cls/main.rb
+
+
+* Go is like overbearing parents
+Go wants you to:
+
+- go fmt -- controls the formatting of your source code.
+
+- go get -- constrains where you get and put packages.
+
+- use types (string, int, bool) -- for your own good
+
+- use interfaces -- eat your vegetables
+
+------
+
+*Arrgh!* If I was a rebellious teenager ...
+
+I would run off with my girlfriend *ruby*!
+
+
+
+* Eat your vegetables...
+
+The simple power of Go packages.
+
+You have been working on your code and you want to extract some code to put into a package so that it may be easily reused across projects.
+
+- Ruby has bundler and gems.
+- Python has pip and the Python Package Index (PyPI).
+- Java has maven and gradle.
+- Go has go get.
+
+How is Go different?
+
+With Go -- making, publishing and reusing a package is really simple (next slide...)
+
+* dflt package on github.com/siuyin/dflt
+
+  package dflt
+
+  import (
+  	"os"
+  	"strconv"
+  )
+
+  // EnvString sets default string dflt from a environment variable enVar.
+  // Eg. EnvString("MYVAR","abc") returns "abc" if MYVAR is not set or
+  // MYVAR's value if it is.
+  func EnvString(enVar, dflt string) (ret string) {
+  	ret = dflt
+  	if os.Getenv(enVar) != "" {
+  		ret = os.Getenv(enVar)
+  	}
+  	return
+  }
+
+The above file (dflt.go) goes into $GOPATH/src/github.com/siuyin/dflt.
+Eg. The full path is: /home/siuyin/go/src/github.com/dflt/dflt.go
+
+
+* Publishing the package
+To publish the package, just `git`push` to github.
+
+But it does not have to be a _git_ repo. The following are supported:
+
+  Bazaar      .bzr
+  Git         .git
+  Mercurial   .hg
+  Subversion  .svn
+
+For details: `go`help`importpath`
+
+But sometimes you do _not_ want to push your package into a separate repo.
+For example: a cfg (configuration) package.
+
+
+* Using your packages
+pkg/main.go:
+.code pkg/main.go
+
+
+
+* ./cfg/cfg.go:
+.code pkg/cfg/cfg.go
+
+To summarize:
+
+- A Go package is just a Go source file
+- Publishing the package is a matter of pushing it to a repo (like github.com)
+- Get a package from the repo with `go`get`. Manually retrieve a private repo into $GOPATH/src .
+- Use a package by specifying the import path. It can be a relative path like "./cfg"
+
+* How I use Go packages
+
+- A package is responsible for only one thing and it does it well. Single responsibility principle.
+- Packages used by multiple programs go into its own _published_ source repository. Eg. github.com/siuyin/dflt
+- Published packages are open to extension but closed to modification. i.e. you can add stuff but don't change existing code.
+- Private packages are specified with a relative import path. Eg. "./cfg" These are used only by the current program and thus open to modification.
+- Put only related stuff into a package. Eg. Sin, Cos and Tan should be in the _math_ package. i.e. packages should be cohesive.
+
+
+
+* Go encourages you to face your fears ... or panic
+err/main.go
+.play -edit err/main.go /010/,/020/
+
+The Master knows how to handle the error situation, the Rookie does not.
+
+
+* Handle the error if you know how, otherwise panic
+
+Master below knows how to handle the error...
+
+.code err/main.go /030/,/040/
+
+Rookie above does not, panics and hopes the calling program knows how to handle / recover from the situation.
+
+For more info refer to the Go blog on:
+.link https://blog.golang.org/defer-panic-and-recover defer panic and recover
+
+
+* Go interfaces let you plug-and-play -- easily.
+
+What's this io.Reader stuff in Go?
+
+  type Reader interface {
+          Read(p []byte) (n int, err error)
+  }
+
+It is a specification for a
+`Read` function that takes a slice of bytes, `p`;
+
+And returns: `n` the number of bytes read
+and
+`err` (a Go error type).
+
+----
+
+So ... How do we _use_ this?
+
+
+* Let's read from a os.File
+rdr/file/main.go
+.play rdr/file/main.go
+
+
+* Let's read from a string
+rdr/string/main.go
+.play rdr/str/main.go
+
+
+Hmm... these two programs look really, really similar...
+
+
+* Types implementing an interface are substitutable
+rdr/intf/main.go
+.play rdr/intf/main.go /010/,/020/
+
+main.read can read from _any_ type that has a
+
+ Read(p []byte) (n int, err error)
+
+method. Eg. net/http.Request.Body
+
+
+* Yes, yes ... But how do I use it?
+get_usr/main.go:
+.play -edit get_usr/main.go /010/,/020/
+
+Go will complain at _compile_ time if the type does _not_ have a Get method. Types are good for you...
+
+
+
+* How I use interfaces
+- I learned from Go. My interfaces are small, with only one or two methods.
+- Types in Go do not declare it implements an interface. If it has a method matching the interface signature (eg. Get(i int) string) -- it will satisfy the interface. This makes interfaces in Go easy to use and very powerful.
+- Abstract external dependencies (eg. Network services or Databases) as an interface. This lets you use a mock type in place of the service for testing. Eg. string io.Reader instead of network io.Reader.
+
+For more info on Go interfaces, refer to:
+.link https://golang.org/doc/effective_go.html#interfaces interfaces section on Effective Go
+
+* Concurrency -- a programming technique
+Useful to model the real world where many things happen at the same time.
+
+Challenge: Write a program that has two concurrent processes:
+
+- Process A: prints "A"s at 1 second interval
+- Process b: prints "b"s at 1 second interval
+
+* Node.js to the rescue!
+concur/main.js
+.code concur/main.js
+
+What if A() and b() are computationally expensive (and thus blocking) taking 1 second to produce the A's and b's?
+Node can still do it but it gets more complex. Use thread pools etc.
+
+
+* Go concurrency
+.play concur/main.go /010/,/020/
+
+
+* Synchronized concurrent processes
+Let's make the programming challenge more complex.
+
+- Process A still prints "A"s once a second
+- Process b must wait for a signal / message from Process A before it prints its "b"s
+
+Go channels to the rescue!
+
+* a() sends a true value into a Go channel
+chan/main.go:
+.code chan/main.go /010/,/020/
+
+* b()'s select waits for a value
+.code chan/main.go /030/,/040/
+.play chan/main.go /050/,/060/
+
+We now understand why an empty select{} waits forever. It's waiting for messages that never arrive.
+
+
+
+* For much more on Go concurrency
+
+Learn directly from one of the Go authors.
+Watch Rob Pike's talk on:
+.link https://youtu.be/f6kdp27TYZs Go Concurrency Patterns
+
+* How Go helped me be a better programmer
+
+- Packages encourage modularity and re-use
+- Packages can be "published" or "private" (relative import path)
+- Persuades you to deal with errors or panic to delegate error handling to a function higher in the call stack
+- Encourages using small interfaces, allowing easy substitution between types that satisfy the interface
+- Has concurrency built-in, allowing you to write programs that reflect real-world concurrent processes
+
+Some of you may have realized the above vaguely resemble Robert C. Martin's SOLID principles. Learn more at:
+.link https://en.wikipedia.org/wiki/SOLID_(object-oriented_design) SOLID on Wikipedia
